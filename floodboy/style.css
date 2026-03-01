@@ -48,6 +48,39 @@ body::before {
     width: 100%;
     max-width: 1000px;
     position: relative;
+    padding-top: 60px;
+}
+
+/* Cyber Nav */
+.cyber-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 15px;
+}
+
+.nav-item {
+    font-size: 0.7rem;
+    color: var(--primary);
+    text-decoration: none;
+    letter-spacing: 2px;
+    font-weight: bold;
+    padding: 8px 20px;
+    border: 1px solid var(--border-gold);
+    border-radius: 30px;
+    background: rgba(10, 10, 15, 0.5);
+    transition: all 0.3s;
+}
+
+.nav-item:hover {
+    background: rgba(212, 175, 55, 0.2);
+    box-shadow: 0 0 15px var(--gold-glow);
+    color: #fff;
+    border-color: #fff;
 }
 
 /* HUD Card Styles */

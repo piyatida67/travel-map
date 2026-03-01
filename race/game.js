@@ -5,7 +5,7 @@
 
 const CONFIG = {
     BROKER: 'wss://dustboy-wss-bridge.laris.workers.dev/mqtt',
-    TOPIC_ROOT: 'oracle/race/v2/', // Changed to v2 to clear old ghost data completely
+    TOPIC_ROOT: 'oracle/race/v5/', // Changed to v5 to forcibly clear all ghosts from previous tests
     FINISH_LINE: 500, // Distance increased (taps required)
     STEP: 5,        // Pixels or units per tap
     RETAIN: true
@@ -73,26 +73,42 @@ client.on('connect', () => {
 });
 
 client.on('message', (topic, message) => {
-    const payload = JSON.parse(message.toString());
+    let payload = null;
+    const msgStr = message.toString();
 
-    if (topic === CONFIG.TOPIC_ROOT + 'status') {
+    // Safely parse JSON, ignoring empty messages (like LWT disconnects)
+    if (msgStr.length > 0) {
+        try {
+            payload = JSON.parse(msgStr);
+        } catch (e) {
+            console.warn("Skipping invalid JSON payload:", msgStr);
+            return;
+        }
+    }
+
+    if (topic === CONFIG.TOPIC_ROOT + 'status' && payload) {
         handleGameStatus(payload);
     }
-    else if (topic === CONFIG.TOPIC_ROOT + 'halloffame') {
+    else if (topic === CONFIG.TOPIC_ROOT + 'halloffame' && payload) {
         handleHallOfFame(payload);
     }
     else if (topic.startsWith(CONFIG.TOPIC_ROOT + 'p/')) {
         const pid = topic.split('/').pop();
         if (pid !== state.player.id) {
-            // If payload is empty, the player disconnected (LWT triggered)
-            if (message.length === 0) {
+            // If payload is empty, the player disconnected (via LWT or tab close)
+            if (msgStr.length === 0) {
                 state.others.delete(pid);
-            } else {
+            } else if (payload) {
                 state.others.set(pid, payload);
             }
             renderRace();
         }
     }
+});
+
+// Explicitly clear this player from the grid if the tab is closed/refreshed
+window.addEventListener('beforeunload', () => {
+    client.publish(CONFIG.TOPIC_ROOT + 'p/' + state.player.id, '', { retain: true });
 });
 
 // --- Game Logic ---
@@ -182,7 +198,12 @@ function finish() {
     state.player.finished = true;
     state.player.time = (Date.now() - state.game.startTime) / 1000;
 
-    updateHallOfFame();
+    // Show the winner overlay locally immediately just in case MQTT fails
+    showWinner(state.player.name, state.player.time);
+
+    try {
+        updateHallOfFame();
+    } catch (e) { console.error('HOF Error', e); }
 
     // Broadcast that this player won (first one to publish this wins the race globally)
     // Only publish if the global state is not already FINISHED

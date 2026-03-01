@@ -298,11 +298,13 @@ function renderChart() {
             datasets: [{
                 label: isDepth ? 'Water Depth (m)' : 'Battery Voltage (V)',
                 data: appData.history.map(p => isDepth ? p.depth : p.volt),
-                borderColor: isDepth ? '#3B82F6' : '#10B981',
-                backgroundColor: isDepth ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 201, 0.1)',
+                borderColor: isDepth ? '#d4af37' : '#00ffcc',
+                backgroundColor: isDepth ? 'rgba(212, 175, 55, 0.1)' : 'rgba(0, 255, 204, 0.1)',
                 fill: true,
                 tension: 0.4,
-                pointRadius: 0
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                borderWidth: 3
             }]
         },
         options: {
@@ -313,19 +315,27 @@ function renderChart() {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    backgroundColor: 'rgba(5, 5, 16, 0.9)',
+                    titleColor: '#d4af37',
+                    bodyColor: '#fff',
+                    borderColor: '#d4af37',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
                     callbacks: {
-                        label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toFixed(isDepth ? 4 : 3)}`
+                        label: (ctx) => `DATA_SCAN > ${ctx.dataset.label}: ${ctx.raw.toFixed(isDepth ? 4 : 3)}`
                     }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: false,
-                    grid: { color: '#F3F4F6' }
+                    grid: { color: 'rgba(212, 175, 55, 0.1)' },
+                    ticks: { color: '#aaa' }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }
+                    ticks: { color: '#aaa', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }
                 }
             }
         }

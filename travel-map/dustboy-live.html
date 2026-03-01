@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Dashboard: DustBoy Live — Two Rivers</title>
+    <!-- Use CDN for MQTT -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: #fff;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-top: 10px;
+            pointer-events: auto;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            color: #d4af37;
+            text-transform: uppercase;
+            letter-spacing: 12px;
+            margin: 0;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+            font-weight: 900;
+        }
+
+        .header p {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            letter-spacing: 5px;
+            margin-top: 5px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 25px;
+            pointer-events: auto;
+        }
+
+        .cyber-btn {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: #d4af37;
+            padding: 10px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .cyber-btn:hover {
+            background: rgba(212, 175, 55, 0.2);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+            color: #fff;
+        }
+
+        .hud {
+            position: absolute;
+            bottom: 50px;
+            right: 50px;
+            background: rgba(10, 10, 15, 0.85);
+            border: 1px solid #d4af37;
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            pointer-events: auto;
+            min-width: 280px;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(212, 175, 55, 0.1);
+            transform: translateY(20px);
+        }
+
+        .hud.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hud .label {
+            font-size: 0.75rem;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .hud .val {
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin: 0;
+            line-height: 1;
+            text-shadow: 0 0 20px currentColor;
+        }
+
+        .hud .unit {
+            font-size: 1rem;
+            opacity: 0.5;
+            font-weight: normal;
+            margin-left: 5px;
+        }
+
+        .hud .station {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #fff;
+        }
+
+        .hud .sub {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 10px;
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff3e3e;
+        }
+
+        .dot.online {
+            background: #00ffcc;
+            box-shadow: 0 0 15px #00ffcc;
+        }
+
+        #tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #d4af37;
+            padding: 8px 15px;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            font-size: 0.85rem;
+            transform: translate(-50%, -150%);
+            color: #fff;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .footer-note {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            font-size: 0.8rem;
+            opacity: 0.6;
+            pointer-events: auto;
+            line-height: 1.6;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="overlay">
+        <div class="connection-status">
+            <div class="dot" id="status-dot"></div>
+            <span id="status-text">SYSTEM OFFLINE</span>
+        </div>
+
+        <div class="header">
+            <h1>Solar DustBoy</h1>
+            <p>QUANTUM PLANETARY AQI VISUALIZATION</p>
+            <div class="nav-links">
+                <a href="https://piyatida67.github.io/piyathida-cv/" class="cyber-btn" target="_blank">📄 MY CV</a>
+                <a href="../floodboy/index.html" class="cyber-btn">🌊 FLOODBOY</a>
+                <a href="index.html" class="cyber-btn">📍 2D TRACK</a>
+                <a href="travel-3d.html" class="cyber-btn">🚀 DEN-LINER</a>
+                <a href="dustboy-3d.html" class="cyber-btn">💎 3D CYBER</a>
+            </div>
+        </div>
+
+        <div class="hud" id="hud">
+            <div class="label">Planetary PM2.5 Level</div>
+            <div style="display: flex; align-items: baseline;">
+                <div class="val" id="hud-val">--</div>
+                <div class="unit">µg/m³</div>
+            </div>
+            <div class="station" id="hud-station">Awaiting Selection...</div>
+            <div class="sub" id="hud-sub">Node ID: --</div>
+        </div>
+
+        <div class="footer-note">
+            🤖 สร้างโดย Two Rivers (สองแคว) — Teaching Oracle | Antigravity (Bell) ✨<br>
+            🖱️ Orbit: Left Click & Drag | 🔍 Zoom: Scroll | 👆 Click Planet for Intel
+        </div>
+    </div>
+
+    <div id="tooltip">Station Name</div>
+
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const stations = new Map();
+        const planets = new Map();
+        let selectedPlanet = null;
+
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050510, 0.0015);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 3000);
+        camera.position.set(0, 180, 300);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // Add tone mapping for better glow
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxDistance = 800;
+        controls.minDistance = 50;
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0x222233, 1.5);
+        scene.add(ambientLight);
+
+        // The Sun Light
+        const sunLight = new THREE.PointLight(0xffaa00, 15000, 1200);
+        scene.add(sunLight);
+
+        // --- The Sun ---
+        const sunGroup = new THREE.Group();
+
+        const sunGeo = new THREE.SphereGeometry(25, 64, 64);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        sunGroup.add(sun);
+
+        // Sun Glow setup (Core)
+        const glowGeo = new THREE.SphereGeometry(28, 64, 64);
+        const glowMat = new THREE.MeshBasicMaterial({
+            color: 0xffdd44,
+            transparent: true,
+            opacity: 0.4,
+            side: THREE.BackSide,
+            blending: THREE.AdditiveBlending
+        });
+        const sunGlow = new THREE.Mesh(glowGeo, glowMat);
+        sunGroup.add(sunGlow);
+
+        // Sun Glow setup (Outer Aura)
+        const auraGeo = new THREE.SphereGeometry(45, 64, 64);
+        const auraMat = new THREE.MeshBasicMaterial({
+            color: 0xff7700,
+            transparent: true,
+            opacity: 0.15,
+            side: THREE.BackSide,
+            blending: THREE.AdditiveBlending
+        });
+        const sunAura = new THREE.Mesh(auraGeo, auraMat);
+        sunGroup.add(sunAura);
+
+        scene.add(sunGroup);
+
+        // --- Starfield Background ---
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount = 4000;
+        const posArray = new Float32Array(starsCount * 3);
+        const colorArray = new Float32Array(starsCount * 3);
+
+        for (let i = 0; i < starsCount * 3; i += 3) {
+            // Random spherical distribution
+            const r = 400 + Math.random() * 800;
+            const theta = 2 * Math.PI * Math.random();
+            const phi = Math.acos(2 * Math.random() - 1);
+
+            posArray[i] = r * Math.sin(phi) * Math.cos(theta);
+            posArray[i + 1] = r * Math.sin(phi) * Math.sin(theta);
+            posArray[i + 2] = r * Math.cos(phi);
+
+            // Random star colors (white to slight blue/gold)
+            const starType = Math.random();
+            if (starType > 0.9) {
+                colorArray[i] = 1; colorArray[i + 1] = 0.8; colorArray[i + 2] = 0.5; // Gold
+            } else if (starType > 0.8) {
+                colorArray[i] = 0.5; colorArray[i + 1] = 0.8; colorArray[i + 2] = 1; // Blueish
+            } else {
+                colorArray[i] = 1; colorArray[i + 1] = 1; colorArray[i + 2] = 1; // White
+            }
+        }
+
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        starsGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+        const starsMat = new THREE.PointsMaterial({
+            size: 2,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            sizeAttenuation: true
+        });
+        const stars = new THREE.Points(starsGeo, starsMat);
+        scene.add(stars);
+
+        // --- Data & Colors ---
+        function getAQIColor(pm25) {
+            if (pm25 <= 15) return 0x00ffcc; // Cyan - Good
+            if (pm25 <= 25) return 0xffff00; // Yellow - Moderate
+            if (pm25 <= 37) return 0xff7e00; // Orange - Sensitive
+            if (pm25 <= 50) return 0xff3e3e; // Red - Unhealthy
+            return 0xbf00ff; // Purple - Hazardous
+        }
+
+        function createValueLabel(value, colorStyle) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 128;
+            const context = canvas.getContext('2d');
+
+            context.font = "bold 65px 'Inter', sans-serif";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+
+            context.shadowColor = "#000000";
+            context.shadowBlur = 10;
+            context.fillStyle = "#ffffff";
+            context.fillText(value, 128, 64);
+
+            context.lineWidth = 3;
+            context.strokeStyle = colorStyle;
+            context.strokeText(value, 128, 64);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(16, 8, 1);
+            return { sprite, texture, context };
+        }
+
+        const planetGeo = new THREE.SphereGeometry(2.5, 32, 32);
+        let orbitCounter = 1;
+
+        function updatePlanet(id, data) {
+            if (!planets.has(id)) {
+                const radius = 55 + (orbitCounter * 12) + (Math.random() * 5);
+                const speed = (0.0005 + Math.random() * 0.002) * (orbitCounter % 2 === 0 ? 1 : -1);
+                orbitCounter++;
+
+                const pathGeo = new THREE.RingGeometry(radius - 0.2, radius + 0.2, 128);
+                const pathMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.03, side: THREE.DoubleSide });
+                const pathRing = new THREE.Mesh(pathGeo, pathMat);
+                pathRing.rotation.x = Math.PI / 2;
+                scene.add(pathRing);
+
+                const orbitGroup = new THREE.Group();
+                orbitGroup.rotation.y = Math.random() * Math.PI * 2;
+
+                const pColor = getAQIColor(data.pm25);
+                const pMat = new THREE.MeshStandardMaterial({
+                    color: pColor, emissive: pColor, emissiveIntensity: 0.8, roughness: 0.3, metalness: 0.8
+                });
+                const planetMesh = new THREE.Mesh(planetGeo, pMat);
+                planetMesh.position.set(radius, 0, 0);
+
+                const pGlowGeo = new THREE.SphereGeometry(3, 32, 32);
+                const pGlowMat = new THREE.MeshBasicMaterial({
+                    color: pColor, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, side: THREE.BackSide
+                });
+                const pGlowMesh = new THREE.Mesh(pGlowGeo, pGlowMat);
+                planetMesh.add(pGlowMesh);
+
+                // Add Label Sprite
+                const colorStyle = '#' + pColor.toString(16).padStart(6, '0');
+                const label = createValueLabel(data.pm25 || '--', colorStyle);
+                label.sprite.position.set(0, 5, 0);
+                planetMesh.add(label.sprite);
+
+                const scale = Math.max(0.6, Math.min((data.pm25 || 10) / 10, 4));
+                planetMesh.scale.set(scale, scale, scale);
+
+                orbitGroup.userData = { speed: speed, id: id };
+                planetMesh.userData = { id: id, isPlanet: true };
+
+                orbitGroup.add(planetMesh);
+                scene.add(orbitGroup);
+
+                planets.set(id, { group: orbitGroup, mesh: planetMesh, glow: pGlowMesh, label: label, data: data });
+            }
+
+            const p = planets.get(id);
+            const oldData = p.data;
+            p.data = data;
+
+            const targetColor = new THREE.Color(getAQIColor(data.pm25));
+            p.mesh.material.color.lerp(targetColor, 0.1);
+            p.mesh.material.emissive.lerp(targetColor, 0.1);
+            p.glow.material.color.lerp(targetColor, 0.1);
+
+            const targetScale = Math.max(0.6, Math.min((data.pm25 || 10) / 10, 4));
+            p.mesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.05);
+
+            // Update label text if value changed
+            if (oldData.pm25 !== data.pm25) {
+                p.label.context.clearRect(0, 0, 256, 128);
+                p.label.context.shadowColor = "#000000";
+                p.label.context.shadowBlur = 10;
+                p.label.context.fillStyle = "#ffffff";
+                p.label.context.fillText(data.pm25 || '--', 128, 64);
+                p.label.context.lineWidth = 3;
+                p.label.context.strokeStyle = '#' + targetColor.getHexString();
+                p.label.context.strokeText(data.pm25 || '--', 128, 64);
+                p.label.texture.needsUpdate = true;
+            }
+
+            // Make labels always face camera
+            p.label.sprite.quaternion.copy(camera.quaternion);
+
+            if (selectedPlanet === id) updateHUD(data);
+        }
+
+        // --- MQTT Connection & Simulation Fallback ---
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+
+        const client = mqtt.connect('wss://dustboy-wss-bridge.laris.workers.dev/mqtt');
+
+        client.on('connect', () => {
+            statusDot.classList.add('online');
+            statusText.innerText = "ORACLE LINK: ESTABLISHED";
+            client.subscribe('DUSTBOY/+/+/+/status');
+        });
+
+        client.on('message', (topic, message) => {
+            try {
+                const data = JSON.parse(message.toString());
+                const id = topic.split('/')[3];
+                // Spawn planet for any valid telemetry JSON to ensure planets appear
+                updatePlanet(id, data);
+            } catch (e) { }
+        });
+
+        // SIMULATION MODE: Inject fake data if the live stream is quiet (for demonstration)
+        setInterval(() => {
+            if (planets.size < 15) {
+                const fakeId = 'SIM-' + Math.floor(Math.random() * 9000 + 1000);
+                const fakePm25 = Math.floor(Math.random() * 80); // Mostly good/moderate, some spikes
+                const fakeData = {
+                    db_id: fakeId,
+                    db_th: `สถานีจำลอง ${fakeId}`,
+                    db_en: `Sim Node ${fakeId}`,
+                    pm25: fakePm25,
+                    pm10: fakePm25 + Math.floor(Math.random() * 20)
+                };
+                updatePlanet(fakeId, fakeData);
+
+                if (planets.size === 1) {
+                    statusText.innerText += " (SIMULATION ACTIVE)";
+                }
+            } else {
+                // Periodically update existing fake nodes to simulate real-time pulsing
+                const existingIds = Array.from(planets.keys()).filter(id => id.startsWith('SIM-'));
+                if (existingIds.length > 0) {
+                    const randomId = existingIds[Math.floor(Math.random() * existingIds.length)];
+                    const p = planets.get(randomId);
+                    const newData = { ...p.data, pm25: Math.max(0, p.data.pm25 + (Math.floor(Math.random() * 11) - 5)) };
+                    updatePlanet(randomId, newData);
+                }
+            }
+        }, 1500);
+
+        // --- Interaction ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const tooltip = document.getElementById('tooltip');
+        let hoveredPlanet = null;
+
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            const meshes = Array.from(planets.values()).map(p => p.mesh);
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(meshes);
+
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'crosshair';
+                const id = intersects[0].object.userData.id;
+                const data = planets.get(id).data;
+                hoveredPlanet = planets.get(id);
+
+                tooltip.style.opacity = '1';
+                tooltip.style.left = event.clientX + 'px';
+                tooltip.style.top = event.clientY + 'px';
+                tooltip.innerText = data.db_th || data.db_en || `Node ${id}`;
+
+                // Highlight effect
+                hoveredPlanet.glow.scale.set(1.5, 1.5, 1.5);
+                hoveredPlanet.glow.material.opacity = 0.8;
+            } else {
+                document.body.style.cursor = 'default';
+                tooltip.style.opacity = '0';
+
+                if (hoveredPlanet) {
+                    hoveredPlanet.glow.scale.set(1, 1, 1);
+                    hoveredPlanet.glow.material.opacity = 0.3;
+                    hoveredPlanet = null;
+                }
+            }
+        });
+
+        window.addEventListener('click', (event) => {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(Array.from(planets.values()).map(p => p.mesh));
+
+            if (intersects.length > 0) {
+                selectedPlanet = intersects[0].object.userData.id;
+                updateHUD(planets.get(selectedPlanet).data);
+
+                // Camera fly to planet (simple lookAt update constraint)
+                const pPos = new THREE.Vector3();
+                intersects[0].object.getWorldPosition(pPos);
+                controls.target.lerp(pPos, 0.2);
+            } else {
+                // Reset to sun
+                controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.2);
+            }
+        });
+
+        function updateHUD(data) {
+            const hud = document.getElementById('hud');
+            hud.classList.add('active');
+
+            const valEl = document.getElementById('hud-val');
+            valEl.innerText = data.pm25 || '--';
+            valEl.style.color = '#' + getAQIColor(data.pm25).toString(16).padStart(6, '0');
+
+            document.getElementById('hud-station').innerText = data.db_th || data.db_en || 'Unknown Planet';
+            document.getElementById('hud-sub').innerText = `Node ID: ${data.db_id || 'UNK'} | PM10: ${data.pm10 || '--'} µg/m³`;
+        }
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Sun gentle pulse
+            const sunScale = 1 + Math.sin(time * 3) * 0.03;
+            sunGroup.scale.set(sunScale, sunScale, sunScale);
+
+            // Outer aura slow rotation
+            sunAura.rotation.y = time * 0.2;
+            sunAura.rotation.z = time * 0.1;
+
+            // Rotate starfield slowly
+            stars.rotation.y = time * 0.005;
+
+            // Orbit planets
+            planets.forEach(p => {
+                p.group.rotation.y += p.group.userData.speed;
+                p.mesh.rotation.y += 0.02; // Self rotation
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>

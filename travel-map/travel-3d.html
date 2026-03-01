@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Travel: Chiang Mai → Phitsanulok</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            background: #87CEEB;
+            /* Day Sky Fallback */
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-left: 4px solid #d4af37;
+            backdrop-filter: blur(10px);
+            border-radius: 0 8px 8px 0;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #d4af37;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .stats {
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #00ffcc;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 0.75rem;
+            opacity: 0.6;
+            pointer-events: none;
+            letter-spacing: 1px;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .cam-btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s;
+            pointer-events: auto;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background: rgba(212, 175, 55, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn.active {
+            background: #d4af37;
+            color: #000;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+        }
+
+        #station-announcer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(90deg, #cc0000, #880000);
+            color: #fff;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 1.4rem;
+            transform: translateX(250%);
+            transition: transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            border-left: 10px solid #fff;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        #station-announcer.active {
+            transform: translateX(0);
+        }
+
+        #station-announcer .sub {
+            font-size: 0.7rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            display: block;
+            letter-spacing: 2px;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #87CEEB;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1s;
+        }
+
+        #minimap {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 250px;
+            height: 180px;
+            border-radius: 12px;
+            border: 2px solid #d4af37;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading" class="loading-screen">
+        <h2 style="color: #d4af37; letter-spacing: 5px;">DEN-LINER</h2>
+        <p style="opacity: 0.5;">Establishing World Coordinates...</p>
+    </div>
+
+    <div class="ui-overlay">
+        <div class="header">
+            <h1>🚅 DEN-LINER</h1>
+            <p>WORLD BUILD MODE — CHIANG MAI → PHITSANULOK</p>
+            <div id="location" class="stats">Initializing...</div>
+            <div id="battery" class="stats"></div>
+        </div>
+    </div>
+
+    <div id="station-announcer">
+        <span class="sub">Arrival at</span>
+        <span id="station-name">---</span>
+    </div>
+
+    <!-- Leaflet Minimap Container -->
+    <div id="minimap"></div>
+
+    <div class="footer">
+        🤖 สร้างโดย Two Rivers (สองแคว) — Teaching Oracle | Antigravity (Bell) 🌟
+    </div>
+
+    <div class="controls">
+        <div class="cam-btn-group">
+            <button class="btn active" onclick="window.setCameraMode('FOLLOW')">FOLLOW</button>
+            <button class="btn" onclick="window.setCameraMode('TOP')">TOP</button>
+            <button class="btn" onclick="window.setCameraMode('SIDE')">SIDE</button>
+            <a href="dustboy-3d.html" class="btn" style="text-decoration: none; background: rgba(255,0,0,0.2);">💎
+                CYBER</a>
+            <a href="dustboy-live.html" class="btn" style="text-decoration: none; background: rgba(212,175,55,0.2);">📊
+                LIVE</a>
+        </div>
+        <div style="opacity: 0.5; font-size: 0.65rem; text-align: center;">
+            🖱️ Orbit: Left | 🔍 Zoom: Scroll | 🖐️ Pan: Right
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Configuration ---
+        const SCALE = 1500;
+        let data = [];
+        let train, spline;
+        let progress = 0;
+        const speed = 0.0001; // Even slower for world exploration
+        let cameraMode = 'FOLLOW';
+        let currentLocality = "";
+
+        // --- Scene Setup - Day Theme ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // Sky Blue
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.0010); // Lighter fog for day
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 20000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); // Bright sunlight ambient
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfff5b6, 2.0); // Warm bright sun
+        sunLight.position.set(500, 1000, 500);
+        scene.add(sunLight);
+
+        const trainLight = new THREE.PointLight(0xffcc00, 50, 30);
+        scene.add(trainLight);
+
+        // --- Environment ---
+        // Grid (Lightened for day)
+        const grid = new THREE.GridHelper(15000, 150, 0xaaaaaa, 0xdddddd);
+        grid.position.y = -2;
+        grid.material.opacity = 0.2;
+        grid.material.transparent = true;
+        scene.add(grid);
+
+        // --- Leaflet Mini-map Setup ---
+        const map = L.map('minimap', {
+            zoomControl: false,
+            dragging: false,
+            scrollWheelZoom: false,
+            doubleClickZoom: false
+        }).setView([18.7902, 99.0115], 10);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO'
+        }).addTo(map);
+
+        const trainIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#cc0000;width:12px;height:12px;border-radius:50%;border:2px solid gold;'></div>",
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+        });
+
+        const trainMarker = L.marker([18.7902, 99.0115], { icon: trainIcon }).addTo(map);
+
+        // --- Load & Process Data ---
+        function latLonToVector(lat, lon, origin) {
+            const x = (lon - origin.lon) * Math.cos(origin.lat * Math.PI / 180) * SCALE;
+            const z = (origin.lat - lat) * SCALE;
+            return new THREE.Vector3(x, 0, z);
+        }
+
+        Papa.parse('travel-phitsanulok.csv', {
+            download: true,
+            header: true,
+            dynamicTyping: true,
+            complete: function (results) {
+                data = results.data.filter(d => d.lat && d.lon);
+                if (data.length === 0) return;
+
+                const origin = { lat: data[0].lat, lon: data[0].lon };
+                const points = data.map(d => latLonToVector(d.lat, d.lon, origin));
+
+                spline = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
+
+                // Track Rails
+                createRails(spline);
+
+                // Den-Liner
+                train = createDenLiner();
+                train.scale.set(0.2, 0.2, 0.2); // Adjust Scale relative to rails
+                scene.add(train);
+
+                // World Building
+                createEnvironment(spline);
+                createStation(spline.getPoint(0), spline.getTangent(0), "สถานีเชียงใหม่");
+                createStation(spline.getPoint(1), spline.getTangent(1), "สถานีพิษณุโลก");
+
+                document.getElementById('loading').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading').remove(), 1000);
+            }
+        });
+
+        function createRails(curve) {
+            const pts = curve.getPoints(3000);
+            const railGeo = new THREE.BufferGeometry().setFromPoints(pts);
+
+            // Central Power Path
+            const powerMat = new THREE.LineBasicMaterial({ color: 0xffcc00, transparent: true, opacity: 0.8 });
+            scene.add(new THREE.Line(railGeo, powerMat));
+
+            // Side Metal Rails
+            const offset = 0.45;
+            const leftRail = pts.map((p, i) => {
+                const t = curve.getTangent(i / pts.length);
+                const norm = new THREE.Vector3(-t.z, 0, t.x).normalize().multiplyScalar(offset);
+                return p.clone().add(norm);
+            });
+            const rightRail = pts.map((p, i) => {
+                const t = curve.getTangent(i / pts.length);
+                const norm = new THREE.Vector3(t.z, 0, -t.x).normalize().multiplyScalar(offset);
+                return p.clone().add(norm);
+            });
+
+            const railMat = new THREE.LineBasicMaterial({ color: 0x555555, transparent: true, opacity: 0.4 });
+            scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(leftRail), railMat));
+            scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rightRail), railMat));
+        }
+
+        function createDenLiner() {
+            const group = new THREE.Group();
+            const silver = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9, roughness: 0.1 });
+            const red = new THREE.MeshStandardMaterial({ color: 0xaa0000, emissive: 0x220000 });
+            const glass = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 2 });
+
+            // Lead Car
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 0.6), silver);
+            body.position.y = 0.4;
+            group.add(body);
+
+            const nose = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.2, 4), red);
+            nose.rotation.z = -Math.PI / 2;
+            nose.position.set(1.5, 0.4, 0);
+            group.add(nose);
+
+            const cockpit = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, 0.62), glass);
+            cockpit.position.set(1.1, 0.55, 0);
+            group.add(cockpit);
+
+            // Carriages
+            for (let i = 1; i <= 3; i++) {
+                const c = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.55, 0.55), silver);
+                c.position.set(-i * 2.4, 0.38, 0);
+                group.add(c);
+                const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 0.58), red);
+                stripe.position.set(-i * 2.4, 0.5, 0);
+                group.add(stripe);
+            }
+            return group;
+        }
+
+        function createStation(pos, tangent, name) {
+            const station = new THREE.Group();
+
+            // Solid Box Geometry requested
+            const mat = new THREE.MeshStandardMaterial({ color: 0xddaa55 });
+            const building = new THREE.Mesh(new THREE.BoxGeometry(10, 4, 6), mat);
+            building.position.y = 2;
+            station.add(building);
+
+            // Simple Sprite for Label
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 512; canvas.height = 128;
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, 512, 128); // Background for label visibility in day
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 60px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(name, 256, 80);
+            const tex = new THREE.CanvasTexture(canvas);
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex }));
+            sprite.scale.set(8, 2, 1);
+            sprite.position.y = 6;
+            station.add(sprite);
+
+            station.position.copy(pos);
+            station.lookAt(pos.clone().add(tangent));
+            scene.add(station);
+        }
+
+        function createEnvironment(curve) {
+            const treeGeo = new THREE.ConeGeometry(0.5, 2.5, 6);
+            const treeMat = new THREE.MeshStandardMaterial({ color: 0x228B22 }); // Forest Green Day Trees
+            const mountainGeo = new THREE.SphereGeometry(20, 8, 8);
+            const mountMat = new THREE.MeshStandardMaterial({ color: 0x5c7a5c }); // Bright Greenish Mountains
+
+            for (let i = 0; i < 800; i++) {
+                const t = Math.random();
+                const p = curve.getPoint(t);
+                const tg = curve.getTangent(t);
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const offset = new THREE.Vector3(-tg.z, 0, tg.x).normalize().multiplyScalar(15 + Math.random() * 80);
+
+                if (Math.random() > 0.85) {
+                    const m = new THREE.Mesh(mountainGeo, mountMat);
+                    m.position.copy(p).add(offset.clone().multiplyScalar(3));
+                    m.position.y = -5;
+                    m.scale.set(1 + Math.random() * 2, 0.5 + Math.random() * 2, 1 + Math.random() * 2);
+                    scene.add(m);
+                } else {
+                    const tree = new THREE.Mesh(treeGeo, treeMat);
+                    tree.position.copy(p).add(offset);
+                    tree.scale.setScalar(0.4 + Math.random() * 1.5);
+                    scene.add(tree);
+                }
+            }
+        }
+
+        window.setCameraMode = function (mode) {
+            cameraMode = mode;
+            document.querySelectorAll('.btn').forEach(b => b.classList.toggle('active', b.innerText === mode));
+        };
+
+        function announce(text) {
+            const el = document.getElementById('station-announcer');
+            const nameEl = document.getElementById('station-name');
+            if (currentLocality === text) return;
+            currentLocality = text;
+            nameEl.innerText = text;
+            el.classList.add('active');
+            setTimeout(() => el.classList.remove('active'), 5000);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (spline && train && data.length > 0) {
+                progress += speed;
+                if (progress > 1) progress = 0;
+
+                const pos = spline.getPoint(progress);
+                const tangent = spline.getTangent(progress);
+
+                train.position.copy(pos);
+                train.lookAt(pos.clone().add(tangent)); // Precise alignment to rail trajectory
+                trainLight.position.copy(pos).add(new THREE.Vector3(0, 4, 0));
+
+                let targetCam = new THREE.Vector3();
+                if (cameraMode === 'FOLLOW') {
+                    const offset = new THREE.Vector3(-18, 10, -18).applyQuaternion(train.quaternion);
+                    targetCam.copy(pos).add(offset);
+                } else if (cameraMode === 'TOP') {
+                    targetCam.set(pos.x, 80, pos.z);
+                } else if (cameraMode === 'SIDE') {
+                    const offset = new THREE.Vector3(0, 6, 30).applyQuaternion(train.quaternion);
+                    targetCam.copy(pos).add(offset);
+                }
+
+                camera.position.lerp(targetCam, 0.02); // Smooth cinematic follow
+                controls.target.lerp(pos, 0.04);
+
+                const d = data[Math.floor(progress * (data.length - 1))] || data[0];
+                const loc = d.locality || "Den-Liner Track";
+                document.getElementById('location').innerText = `📍 ${loc}`;
+                document.getElementById('battery').innerText = `🔋 Den-Energy: ${d.battery}%`;
+
+                // Update Mini-map
+                trainMarker.setLatLng([d.lat, d.lon]);
+                map.panTo([d.lat, d.lon], { animate: false });
+
+                if (loc !== "Den-Liner Track") announce(loc);
+                if (progress > 0.99) announce("สถานีรถไฟพิษณุโลก");
+                if (progress < 0.01) announce("สถานีเชียงใหม่");
+            }
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>

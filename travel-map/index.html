@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Map: Chiang Mai to Phitsanulok</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: #121212;
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #map {
+            height: calc(100% - 60px);
+            width: 100%;
+        }
+
+        .header {
+            padding: 10px 20px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #d4af37;
+            /* Gold */
+        }
+
+        .footer {
+            height: 40px;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            border-top: 1px solid #333;
+        }
+
+        /* Custom Leaflet Dark Theme Adjustments */
+        .leaflet-popup-content-wrapper {
+            background: #2c2c2c;
+            color: #fff;
+        }
+
+        .leaflet-popup-tip {
+            background: #2c2c2c;
+        }
+
+        .leaflet-container {
+            background: #121212;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>📍 GPS Travel: Chiang Mai → Phitsanulok</h1>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <a href="travel-3d.html"
+                style="color: #00ffcc; font-size: 0.9rem; text-decoration: none; border: 1px solid #00ffcc; padding: 4px 8px; border-radius: 4px;">🚀
+                3D View</a>
+            <a href="dustboy-3d.html"
+                style="color: #ff3e3e; font-size: 0.9rem; text-decoration: none; border: 1px solid #ff3e3e; padding: 4px 8px; border-radius: 4px;">💎
+                3D Cyber</a>
+            <a href="dustboy-live.html"
+                style="color: #d4af37; font-size: 0.9rem; text-decoration: none; border: 1px solid #d4af37; padding: 4px 8px; border-radius: 4px;">📊
+                Live DustBoy</a>
+            <div id="stats" style="font-size: 0.9rem;">กำลังโหลดข้อมูล...</div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="footer">
+        🤖 สร้างโดย Two Rivers (สองแคว) — Teaching Oracle | Antigravity (Bell)
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script>
+        // Initialize Map
+        const map = L.map('map').setView([17.6, 99.6], 7);
+
+        // Dark Theme Tile Layer (CartoDB DarkMatter)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        // Fetch and Parse CSV
+        Papa.parse('travel-phitsanulok.csv', {
+            download: true,
+            header: true,
+            dynamicTyping: true,
+            complete: function (results) {
+                const data = results.data.filter(d => d.lat && d.lon);
+                const path = [];
+
+                data.forEach((row, index) => {
+                    const lat = parseFloat(row.lat);
+                    const lon = parseFloat(row.lon);
+                    path.push([lat, lon]);
+
+                    // Add markers for specific points (every 20th point or if it's start/end)
+                    if (index === 0 || index === data.length - 1 || index % 20 === 0 || row.place) {
+                        const marker = L.circleMarker([lat, lon], {
+                            radius: index === 0 || index === data.length - 1 ? 8 : 5,
+                            fillColor: index === 0 ? "#4caf50" : (index === data.length - 1 ? "#f44336" : "#d4af37"),
+                            color: "#fff",
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        }).addTo(map);
+
+                        const popupContent = `
+                            <strong>📍 ${row.place || row.locality || 'ระหว่างทาง'}</strong><br>
+                            🕒 เวลา: ${row.updated}<br>
+                            🔋 แบตเตอรี่: ${row.battery}% (${row.charging})<br>
+                            🌍 พิกัด: ${lat.toFixed(4)}, ${lon.toFixed(4)}
+                        `;
+                        marker.bindPopup(popupContent);
+                    }
+                });
+
+                // Draw Polyline
+                const polyline = L.polyline(path, {
+                    color: '#d4af37',
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '5, 10'
+                }).addTo(map);
+
+                // Fit bounds
+                map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+
+                document.getElementById('stats').innerText = `รวม ${data.length} จุดพิกัด จากเชียงใหม่ถึงพิษณุโลก`;
+            }
+        });
+    </script>
+</body>
+
+</html>

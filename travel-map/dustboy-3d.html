@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber-Oracle: DustBoy 3D Stream</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+            background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
+        }
+
+        .header {
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            padding-bottom: 15px;
+            pointer-events: auto;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #d4af37;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            font-size: 0.7rem;
+            opacity: 0.6;
+            letter-spacing: 2px;
+        }
+
+        .node-info {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #d4af37;
+            padding: 20px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: auto;
+            min-width: 250px;
+        }
+
+        .node-info.active {
+            opacity: 1;
+        }
+
+        .node-info .val {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #00ffcc;
+            margin: 10px 0;
+        }
+
+        .node-info .label {
+            font-size: 0.8rem;
+            opacity: 0.6;
+            text-transform: uppercase;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            opacity: 0.5;
+            pointer-events: auto;
+        }
+
+        .nav-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            color: #d4af37;
+            padding: 5px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #d4af37;
+            color: #000;
+        }
+
+        #mqtt-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff3e3e;
+        }
+
+        .dot.online {
+            background: #00ffcc;
+            box-shadow: 0 0 10px #00ffcc;
+        }
+
+        /* Scanning Line Effect */
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(212, 175, 55, 0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: scan 4s linear infinite;
+        }
+
+        @keyframes scan {
+            from {
+                top: 0;
+            }
+
+            to {
+                top: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="overlay">
+        <div class="header">
+            <div id="mqtt-status">
+                <div class="dot"></div>Connecting to Oracle Stream...
+            </div>
+            <h1>CYBER-ORACLE: DUSTBOY</h1>
+            <p>QUANTUM DATA VISUALIZATION — PM2.5 LIVE STREAM</p>
+        </div>
+
+        <div id="info" class="node-info">
+            <div class="label">Cyber Node ID</div>
+            <div id="info-id" style="color: #d4af37; font-weight: bold;">--</div>
+            <div class="label" style="margin-top: 15px;">Target Locality</div>
+            <div id="info-name" style="font-size: 1.1rem;">Waiting for selection...</div>
+            <div class="val" id="info-val">--</div>
+            <div class="label">µg/m³ (PM2.5)</div>
+            <div style="font-size: 0.7rem; margin-top: 15px; opacity: 0.5;">Update: <span id="info-time">--</span></div>
+        </div>
+
+        <div class="footer">
+            <div class="nav-group">
+                <a href="index.html" class="btn">📍 2D MAP</a>
+                <a href="travel-3d.html" class="btn">🚀 DEN-LINER</a>
+                <a href="dustboy-live.html" class="btn">📊 DASHBOARD</a>
+            </div>
+            <div>🤖 สร้างโดย Two Rivers (สองแคว) — Teaching Oracle | Antigravity (Bell) ✨</div>
+        </div>
+    </div>
+
+    <div class="scanline"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Data Handling ---
+        const stations = new Map();
+        const pillars = new Map();
+        let selectedNode = null;
+
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x010103);
+        scene.fog = new THREE.FogExp2(0x010103, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(40, 40, 40);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // --- Grid & Environment ---
+        const grid = new THREE.GridHelper(200, 40, 0xd4af37, 0x111111);
+        grid.material.opacity = 0.2;
+        grid.material.transparent = true;
+        scene.add(grid);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        scene.add(ambientLight);
+
+        const spotlight = new THREE.PointLight(0xd4af37, 1000, 100);
+        spotlight.position.set(20, 50, 20);
+        scene.add(spotlight);
+
+        // --- Node Logic ---
+        function getAQIColor(pm25) {
+            if (pm25 <= 15) return 0x00ffcc; // Good
+            if (pm25 <= 25) return 0xffcc00; // Moderate
+            if (pm25 <= 37) return 0xff7e00; // Sensitive
+            if (pm25 <= 50) return 0xff3e3e; // Unhealthy
+            return 0x9900ff; // Hazardous
+        }
+
+        function updatePillar(id, data) {
+            if (!pillars.has(id)) {
+                // Create New Node
+                const group = new THREE.Group();
+                const geo = new THREE.BoxGeometry(2, 1, 2);
+                const mat = new THREE.MeshStandardMaterial({
+                    color: getAQIColor(data.pm25),
+                    transparent: true,
+                    opacity: 0.8,
+                    emissive: getAQIColor(data.pm25),
+                    emissiveIntensity: 1
+                });
+
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.y = 0.5;
+                group.add(mesh);
+
+                // Wireframe outline
+                const wireGeo = new THREE.EdgesGeometry(geo);
+                const wireMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+                const wire = new THREE.LineSegments(wireGeo, wireMat);
+                mesh.add(wire);
+
+                // Position in grid (spiral or layout)
+                const count = pillars.size;
+                const r = 15 + (count * 0.5);
+                const ang = count * 0.8;
+                group.position.set(Math.cos(ang) * r, 0, Math.sin(ang) * r);
+
+                scene.add(group);
+                pillars.set(id, { group, mesh, data });
+            }
+
+            const p = pillars.get(id);
+            p.data = data;
+
+            // Animate height based on PM2.5
+            const targetHeight = Math.max(1, data.pm25 || 1);
+            p.mesh.scale.y = THREE.MathUtils.lerp(p.mesh.scale.y, targetHeight, 0.1);
+            p.mesh.position.y = p.mesh.scale.y / 2;
+            p.mesh.material.color.setHex(getAQIColor(data.pm25));
+            p.mesh.material.emissive.setHex(getAQIColor(data.pm25));
+
+            if (selectedNode === id) updateHUD(data);
+        }
+
+        // --- Interaction ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(Array.from(pillars.values()).map(p => p.mesh));
+
+            if (intersects.length > 0) {
+                const clickedMesh = intersects[0].object;
+                for (let [id, p] of pillars) {
+                    if (p.mesh === clickedMesh) {
+                        selectedNode = id;
+                        updateHUD(p.data);
+                        break;
+                    }
+                }
+            }
+        });
+
+        function updateHUD(data) {
+            const info = document.getElementById('info');
+            info.classList.add('active');
+            document.getElementById('info-id').innerText = data.db_id || 'UNKNOWN';
+            document.getElementById('info-name').innerText = data.db_th || data.db_en || 'Node Active';
+            document.getElementById('info-val').innerText = data.pm25 || '--';
+            document.getElementById('info-val').style.color = '#' + getAQIColor(data.pm25).toString(16).padStart(6, '0');
+            document.getElementById('info-time').innerText = new Date().toLocaleTimeString('th-TH');
+        }
+
+        // --- MQTT Connection ---
+        const client = mqtt.connect('wss://dustboy-wss-bridge.laris.workers.dev/mqtt');
+        const statusDot = document.querySelector('.dot');
+
+        client.on('connect', () => {
+            statusDot.classList.add('online');
+            client.subscribe('DUSTBOY/+/+/+/status');
+            console.log('Cyber Oracle Connected');
+        });
+
+        client.on('message', (topic, message) => {
+            try {
+                const data = JSON.parse(message.toString());
+                const id = topic.split('/')[3];
+                updatePillar(id, data);
+            } catch (e) { }
+        });
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Orbiting effect
+            const time = Date.now() * 0.0005;
+            spotlight.position.x = Math.sin(time) * 40;
+            spotlight.position.z = Math.cos(time) * 40;
+
+            pillars.forEach(p => {
+                p.group.rotation.y += 0.005;
+                // Animate height lerp continually
+                const targetH = Math.max(1, p.data.pm25 * 0.5 || 1);
+                p.mesh.scale.y = THREE.MathUtils.lerp(p.mesh.scale.y, targetH, 0.05);
+                p.mesh.position.y = p.mesh.scale.y / 2;
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>

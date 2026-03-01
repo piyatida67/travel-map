@@ -4,48 +4,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber-Oracle: DustBoy 3D Stream</title>
+    <title>3D Cyber DustBoy: Quantum Data Visualization</title>
     <style>
         body {
             margin: 0;
-            background: #000;
-            overflow: hidden;
-            font-family: 'Inter', sans-serif;
+            background: #050510;
             color: #fff;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
         }
 
         canvas {
             display: block;
         }
 
-        .overlay {
+        .ui-panel {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            background: rgba(10, 10, 30, 0.7);
             padding: 20px;
-            box-sizing: border-box;
-            background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
+            border: 1px solid #d4af37;
+            backdrop-filter: blur(15px);
+            border-radius: 12px;
+            pointer-events: auto;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
         }
 
-        .header {
-            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
-            padding-bottom: 15px;
-            pointer-events: auto;
+        .top-left {
+            top: 20px;
+            left: 20px;
+            border-left: 5px solid #d4af37;
         }
 
         .header h1 {
             margin: 0;
             font-size: 1.5rem;
             color: #d4af37;
-            text-transform: uppercase;
             letter-spacing: 4px;
-            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            text-transform: uppercase;
         }
 
         .header p {
@@ -55,143 +50,129 @@
             letter-spacing: 2px;
         }
 
-        .node-info {
-            position: absolute;
-            bottom: 80px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #d4af37;
-            padding: 20px;
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: auto;
-            min-width: 250px;
+        .stats {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .node-info.active {
-            opacity: 1;
-        }
-
-        .node-info .val {
-            font-size: 3rem;
-            font-weight: 900;
-            color: #00ffcc;
-            margin: 10px 0;
-        }
-
-        .node-info .label {
-            font-size: 0.8rem;
-            opacity: 0.6;
-            text-transform: uppercase;
-        }
-
-        .footer {
+        .stat-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            opacity: 0.5;
-            pointer-events: auto;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+            padding-bottom: 5px;
         }
 
-        .nav-group {
+        .stat-val {
+            color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
             display: flex;
-            gap: 10px;
+            gap: 15px;
         }
 
-        .btn {
+        .cyber-btn {
             background: rgba(212, 175, 55, 0.1);
-            border: 1px solid rgba(212, 175, 55, 0.5);
+            border: 1px solid #d4af37;
             color: #d4af37;
-            padding: 5px 15px;
-            border-radius: 4px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
             text-decoration: none;
+            font-size: 0.8rem;
             transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
-        .btn:hover {
+        .cyber-btn:hover {
             background: #d4af37;
             color: #000;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
         }
 
-        #mqtt-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #ff3e3e;
-        }
-
-        .dot.online {
-            background: #00ffcc;
-            box-shadow: 0 0 10px #00ffcc;
-        }
-
-        /* Scanning Line Effect */
-        .scanline {
-            width: 100%;
-            height: 2px;
-            background: rgba(212, 175, 55, 0.1);
-            position: absolute;
+        #loading {
+            position: fixed;
             top: 0;
             left: 0;
-            animation: scan 4s linear infinite;
+            width: 100%;
+            height: 100%;
+            background: #050510;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 1s;
         }
 
-        @keyframes scan {
-            from {
-                top: 0;
+        .loader-ring {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(212, 175, 55, 0.1);
+            border-top: 3px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
             }
 
-            to {
-                top: 100%;
+            100% {
+                transform: rotate(360deg);
             }
         }
     </style>
+    <link rel="stylesheet" href="../global-nav.css" />
 </head>
 
 <body>
+    <nav class="cyber-global-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-link">🏠 HOME</a>
+            <a href="../cv-v2/index.html" class="nav-link">📄 CV</a>
+            <a href="../floodboy/index.html" class="nav-link">🌊 FLOODBOY</a>
+            <a href="dustboy-live.html" class="nav-link">🌌 DUSTBOY</a>
+            <a href="index.html" class="nav-link">📍 2D TRACK</a>
+            <a href="travel-3d.html" class="nav-link">🚀 DEN-LINER</a>
+            <a href="dustboy-3d.html" class="nav-link active">💎 3D CYBER</a>
+            <a href="../race/index.html" class="nav-link">🏁 ORACLE RACE</a>
+        </div>
+    </nav>
 
-    <div class="overlay">
+    <div id="loading">
+        <div class="loader-ring"></div>
+        <p style="color: #d4af37; margin-top: 20px; letter-spacing: 5px;">CYBER CORE BOOTING...</p>
+    </div>
+
+    <div class="ui-panel top-left">
         <div class="header">
-            <div id="mqtt-status">
-                <div class="dot"></div>Connecting to Oracle Stream...
-            </div>
-            <h1>CYBER-ORACLE: DUSTBOY</h1>
-            <p>QUANTUM DATA VISUALIZATION — PM2.5 LIVE STREAM</p>
+            <h1>💎 CYBER DUSTBOY</h1>
+            <p>CRYSTALLINE TEV DATA ARCHITECTURE</p>
         </div>
-
-        <div id="info" class="node-info">
-            <div class="label">Cyber Node ID</div>
-            <div id="info-id" style="color: #d4af37; font-weight: bold;">--</div>
-            <div class="label" style="margin-top: 15px;">Target Locality</div>
-            <div id="info-name" style="font-size: 1.1rem;">Waiting for selection...</div>
-            <div class="val" id="info-val">--</div>
-            <div class="label">µg/m³ (PM2.5)</div>
-            <div style="font-size: 0.7rem; margin-top: 15px; opacity: 0.5;">Update: <span id="info-time">--</span></div>
-        </div>
-
-        <div class="footer">
-            <div class="nav-group">
-                <a href="index.html" class="btn">📍 2D MAP</a>
-                <a href="travel-3d.html" class="btn">🚀 DEN-LINER</a>
-                <a href="dustboy-live.html" class="btn">📊 DASHBOARD</a>
-            </div>
-            <div>🤖 สร้างโดย Two Rivers (สองแคว) — Teaching Oracle | Antigravity (Bell) ✨</div>
+        <div class="stats" id="info-panel">
+            <div class="stat-item"><span>System:</span> <span class="stat-val">Online</span></div>
+            <div class="stat-item"><span>Node Pool:</span> <span class="stat-val" id="node-count">0</span></div>
+            <div class="stat-item"><span>Active Thread:</span> <span class="stat-val">Real-time MQTT</span></div>
         </div>
     </div>
 
-    <div class="scanline"></div>
+    <div class="controls">
+        <a href="dustboy-live.html" class="cyber-btn">🌌 SOLAR VIEW</a>
+        <a href="travel-3d.html" class="cyber-btn">🚅 DEN-LINER</a>
+    </div>
+
+    <!-- MQTT Component -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
     <script type="importmap">
         {
@@ -201,174 +182,129 @@
             }
         }
     </script>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- Data Handling ---
-        const stations = new Map();
-        const pillars = new Map();
-        let selectedNode = null;
+        const nodes = new Map();
 
         // --- Scene Setup ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x010103);
-        scene.fog = new THREE.FogExp2(0x010103, 0.015);
+        scene.fog = new THREE.FogExp2(0x050510, 0.005);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(40, 40, 40);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(20, 20, 50);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
 
-        // --- Grid & Environment ---
-        const grid = new THREE.GridHelper(200, 40, 0xd4af37, 0x111111);
+        // --- Grid & Background ---
+        const grid = new THREE.GridHelper(200, 20, 0xd4af37, 0x111122);
+        grid.position.y = -10;
         grid.material.opacity = 0.2;
         grid.material.transparent = true;
         scene.add(grid);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
-        scene.add(ambientLight);
+        // Core Hub (The "Server")
+        const hubGeo = new THREE.OctahedronGeometry(4, 0);
+        const hubMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true });
+        const hub = new THREE.Mesh(hubGeo, hubMat);
+        scene.add(hub);
 
-        const spotlight = new THREE.PointLight(0xd4af37, 1000, 100);
-        spotlight.position.set(20, 50, 20);
-        scene.add(spotlight);
+        const hubGlow = new THREE.Mesh(hubGeo, new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 }));
+        hubGlow.scale.setScalar(1.2);
+        hub.add(hubGlow);
 
-        // --- Node Logic ---
+        // --- Data Handling ---
         function getAQIColor(pm25) {
-            if (pm25 <= 15) return 0x00ffcc; // Good
-            if (pm25 <= 25) return 0xffcc00; // Moderate
-            if (pm25 <= 37) return 0xff7e00; // Sensitive
-            if (pm25 <= 50) return 0xff3e3e; // Unhealthy
-            return 0x9900ff; // Hazardous
+            if (pm25 <= 15) return 0x00ffcc;
+            if (pm25 <= 25) return 0xffff00;
+            if (pm25 <= 37) return 0xff7e00;
+            if (pm25 <= 50) return 0xff3e3e;
+            return 0xbf00ff;
         }
 
-        function updatePillar(id, data) {
-            if (!pillars.has(id)) {
-                // Create New Node
-                const group = new THREE.Group();
-                const geo = new THREE.BoxGeometry(2, 1, 2);
-                const mat = new THREE.MeshStandardMaterial({
-                    color: getAQIColor(data.pm25),
-                    transparent: true,
-                    opacity: 0.8,
-                    emissive: getAQIColor(data.pm25),
-                    emissiveIntensity: 1
-                });
+        function createNode(id, data) {
+            const group = new THREE.Group();
 
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.y = 0.5;
-                group.add(mesh);
+            const color = getAQIColor(data.pm25);
+            const geo = new THREE.TetrahedronGeometry(1.5, 0);
+            const mat = new THREE.MeshStandardMaterial({
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.5,
+                flatShading: true
+            });
+            const mesh = new THREE.Mesh(geo, mat);
 
-                // Wireframe outline
-                const wireGeo = new THREE.EdgesGeometry(geo);
-                const wireMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
-                const wire = new THREE.LineSegments(wireGeo, wireMat);
-                mesh.add(wire);
+            // Random position in space
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 15 + Math.random() * 30;
+            group.position.set(Math.cos(angle) * dist, (Math.random() - 0.5) * 40, Math.sin(angle) * dist);
 
-                // Position in grid (spiral or layout)
-                const count = pillars.size;
-                const r = 15 + (count * 0.5);
-                const ang = count * 0.8;
-                group.position.set(Math.cos(ang) * r, 0, Math.sin(ang) * r);
+            group.add(mesh);
 
-                scene.add(group);
-                pillars.set(id, { group, mesh, data });
-            }
+            // Connection line to Hub
+            const lineMat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.3 });
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0).sub(group.position)]);
+            const line = new THREE.Line(lineGeo, lineMat);
+            group.add(line);
 
-            const p = pillars.get(id);
-            p.data = data;
-
-            // Animate height based on PM2.5
-            const targetHeight = Math.max(1, data.pm25 || 1);
-            p.mesh.scale.y = THREE.MathUtils.lerp(p.mesh.scale.y, targetHeight, 0.1);
-            p.mesh.position.y = p.mesh.scale.y / 2;
-            p.mesh.material.color.setHex(getAQIColor(data.pm25));
-            p.mesh.material.emissive.setHex(getAQIColor(data.pm25));
-
-            if (selectedNode === id) updateHUD(data);
+            scene.add(group);
+            nodes.set(id, { group, mesh, data });
+            document.getElementById('node-count').innerText = nodes.size;
         }
 
-        // --- Interaction ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('click', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(Array.from(pillars.values()).map(p => p.mesh));
-
-            if (intersects.length > 0) {
-                const clickedMesh = intersects[0].object;
-                for (let [id, p] of pillars) {
-                    if (p.mesh === clickedMesh) {
-                        selectedNode = id;
-                        updateHUD(p.data);
-                        break;
-                    }
-                }
-            }
-        });
-
-        function updateHUD(data) {
-            const info = document.getElementById('info');
-            info.classList.add('active');
-            document.getElementById('info-id').innerText = data.db_id || 'UNKNOWN';
-            document.getElementById('info-name').innerText = data.db_th || data.db_en || 'Node Active';
-            document.getElementById('info-val').innerText = data.pm25 || '--';
-            document.getElementById('info-val').style.color = '#' + getAQIColor(data.pm25).toString(16).padStart(6, '0');
-            document.getElementById('info-time').innerText = new Date().toLocaleTimeString('th-TH');
-        }
-
-        // --- MQTT Connection ---
         const client = mqtt.connect('wss://dustboy-wss-bridge.laris.workers.dev/mqtt');
-        const statusDot = document.querySelector('.dot');
-
         client.on('connect', () => {
-            statusDot.classList.add('online');
             client.subscribe('DUSTBOY/+/+/+/status');
-            console.log('Cyber Oracle Connected');
+            document.getElementById('loading').style.opacity = '0';
+            setTimeout(() => document.getElementById('loading').remove(), 1000);
         });
 
         client.on('message', (topic, message) => {
             try {
                 const data = JSON.parse(message.toString());
                 const id = topic.split('/')[3];
-                updatePillar(id, data);
+                if (!nodes.has(id)) {
+                    createNode(id, data);
+                } else {
+                    const n = nodes.get(id);
+                    n.data = data;
+                    n.mesh.material.color.setHex(getAQIColor(data.pm25));
+                }
             } catch (e) { }
         });
 
-        // --- Animation Loop ---
+        // Sim for empty stream
+        setInterval(() => {
+            if (nodes.size < 20) {
+                createNode('SIM-' + Math.random(), { pm25: Math.random() * 100 });
+            }
+        }, 1500);
+
+        // --- Animation ---
         function animate() {
             requestAnimationFrame(animate);
+            hub.rotation.y += 0.01;
+            hub.rotation.z += 0.005;
+            hubGlow.scale.setScalar(1.2 + Math.sin(Date.now() * 0.005) * 0.1);
 
-            // Orbiting effect
-            const time = Date.now() * 0.0005;
-            spotlight.position.x = Math.sin(time) * 40;
-            spotlight.position.z = Math.cos(time) * 40;
-
-            pillars.forEach(p => {
-                p.group.rotation.y += 0.005;
-                // Animate height lerp continually
-                const targetH = Math.max(1, p.data.pm25 * 0.5 || 1);
-                p.mesh.scale.y = THREE.MathUtils.lerp(p.mesh.scale.y, targetH, 0.05);
-                p.mesh.position.y = p.mesh.scale.y / 2;
+            nodes.forEach(n => {
+                n.group.rotation.y += 0.002;
+                n.mesh.rotation.x += 0.01;
+                n.mesh.rotation.y += 0.01;
             });
 
             controls.update();
             renderer.render(scene, camera);
         }
-
         animate();
 
         window.addEventListener('resize', () => {

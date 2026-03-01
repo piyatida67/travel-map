@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle Race: Real-time Cyber Sprint</title>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Kanit:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../global-nav.css">
+    <!-- MQTT.js -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+
+<body>
+    <nav class="cyber-global-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-link">🏠 HOME</a>
+            <a href="../cv-v2/index.html" class="nav-link">📄 CV</a>
+            <a href="../floodboy/index.html" class="nav-link">🌊 FLOODBOY</a>
+            <a href="https://piyatida67.github.io/travel-map/travel-map/dustboy-live.html" class="nav-link"
+                target="_blank">🌌 DUSTBOY LIVE</a>
+            <a href="../travel-map/index.html" class="nav-link">📍 2D TRACK</a>
+            <a href="../travel-map/travel-3d.html" class="nav-link">🚀 DEN-LINER</a>
+            <a href="index.html" class="nav-link active">🏁 ORACLE RACE</a>
+        </div>
+    </nav>
+
+    <div class="game-container">
+        <!-- Sidebar: Hall of Fame -->
+        <div class="sidebar">
+            <div class="panel hall-of-fame">
+                <h3><span class="gold-text">🏆</span> HALL OF FAME</h3>
+                <div id="leaderboard-list">
+                    <div class="loading-mini">Establishing link...</div>
+                </div>
+            </div>
+            <div class="panel connection-card">
+                <div class="status-indicator">
+                    <div id="status-dot" class="dot"></div>
+                    <span id="status-text">OFFLINE</span>
+                </div>
+                <div class="node-id">NODE: <span id="my-node-id" class="cyan-text">---</span></div>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <main class="race-workspace">
+            <div class="race-header">
+                <h1>ORACLE <span class="gold-text">RACE</span></h1>
+                <p>QUANTUM SPACE-BAR ACCELERATION SYSTEM</p>
+                <button id="btn-reset" class="cyber-btn-small" style="margin-top: 15px;">RESET GRID</button>
+            </div>
+
+            <div class="track-area">
+                <div id="race-track" class="track">
+                    <!-- Players will be injected here -->
+                    <div class="finish-line"></div>
+                </div>
+            </div>
+
+            <div class="controls-hint">
+                <div class="key">SPACE</div>
+                <span>TAP TO ACCELERATE</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- Registration Overlay -->
+    <div id="overlay-reg" class="overlay active">
+        <div class="modal">
+            <h2>INITIALIZE ORACLE</h2>
+            <p>ENTER YOUR CODENAME TO JOIN THE GRID</p>
+            <input type="text" id="nickname-input" placeholder="ORACLE-77" maxlength="15">
+            <div class="character-selection">
+                <p>SELECT WARRIOR: <span id="selected-char-name" class="gold-text">Original Red</span></p>
+                <div class="char-grid">
+                    <div class="char-option active" data-char="og" data-name="Original Red">
+                        <img src="ultraman_base.png" class="char-og">
+                    </div>
+                    <div class="char-option" data-char="tiga" data-name="Tiga Blue">
+                        <img src="ultraman_base.png" class="char-tiga">
+                    </div>
+                    <div class="char-option" data-char="gaia" data-name="Gaia Gold">
+                        <img src="ultraman_base.png" class="char-gaia">
+                    </div>
+                    <div class="char-option" data-char="belial" data-name="Belial Dark">
+                        <img src="ultraman_base.png" class="char-belial">
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-join" class="cyber-btn">JOIN RACE</button>
+        </div>
+    </div>
+
+    <!-- Game Status Overlay -->
+    <div id="overlay-status" class="overlay">
+        <div class="modal">
+            <h1 id="status-title">GET READY</h1>
+            <p id="status-subtitle">WAITING FOR GRID STABILIZATION</p>
+            <div id="countdown" class="large-text"></div>
+        </div>
+    </div>
+
+    <!-- Winner Announcement -->
+    <div id="overlay-winner" class="overlay">
+        <div class="modal winner-modal">
+            <div class="trophy">🏆</div>
+            <h1 id="winner-name">ORACLE-01</h1>
+            <p>HAS REACHED THE SINGULARITY FIRST!</p>
+            <div id="winner-time" class="time-text">--:--</div>
+            <button onclick="location.reload()" class="cyber-btn">RELOAD SYSTEM</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+
+</html>

@@ -203,16 +203,28 @@
             letter-spacing: 1px;
         }
     </style>
+    <link rel="stylesheet" href="../global-nav.css" />
 </head>
 
 <body>
+    <nav class="cyber-global-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-link">🏠 HOME</a>
+            <a href="../cv-v2/index.html" class="nav-link">📄 CV</a>
+            <a href="../floodboy/index.html" class="nav-link">🌊 FLOODBOY</a>
+            <a href="dustboy-live.html" class="nav-link active">🌌 DUSTBOY</a>
+            <a href="index.html" class="nav-link">📍 2D TRACK</a>
+            <a href="travel-3d.html" class="nav-link">🚀 DEN-LINER</a>
+            <a href="dustboy-3d.html" class="nav-link">💎 3D CYBER</a>
+            <a href="../race/index.html" class="nav-link">🏁 ORACLE RACE</a>
+        </div>
+    </nav>
 
     <div class="overlay">
         <div class="connection-status">
             <div class="dot" id="status-dot"></div>
             <span id="status-text">SYSTEM OFFLINE</span>
         </div>
-
         <div class="header">
             <h1>Solar DustBoy</h1>
             <p>QUANTUM PLANETARY AQI VISUALIZATION</p>
@@ -223,9 +235,9 @@
                 <a href="index.html" class="cyber-btn">📍 2D TRACK</a>
                 <a href="travel-3d.html" class="cyber-btn">🚀 DEN-LINER</a>
                 <a href="dustboy-3d.html" class="cyber-btn">💎 3D CYBER</a>
+                <a href="../race/index.html" class="cyber-btn">🏁 ORACLE RACE</a>
             </div>
         </div>
-
         <div class="hud" id="hud">
             <div class="label">Planetary PM2.5 Level</div>
             <div style="display: flex; align-items: baseline;">
@@ -235,7 +247,6 @@
             <div class="station" id="hud-station">Awaiting Selection...</div>
             <div class="sub" id="hud-sub">Node ID: --</div>
         </div>
-
         <div class="footer-note">
             🤖 สร้างโดย Two Rivers (สองแคว) — Teaching Oracle | Antigravity (Bell) ✨<br>
             🖱️ Orbit: Left Click & Drag | 🔍 Zoom: Scroll | 👆 Click Planet for Intel
@@ -253,6 +264,7 @@
             }
         }
     </script>
+
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -353,6 +365,7 @@
 
         starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
         starsGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
         const starsMat = new THREE.PointsMaterial({
             size: 2,
             vertexColors: true,
@@ -395,6 +408,7 @@
             const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
             const sprite = new THREE.Sprite(material);
             sprite.scale.set(16, 8, 1);
+
             return { sprite, texture, context };
         }
 
@@ -418,14 +432,22 @@
 
                 const pColor = getAQIColor(data.pm25);
                 const pMat = new THREE.MeshStandardMaterial({
-                    color: pColor, emissive: pColor, emissiveIntensity: 0.8, roughness: 0.3, metalness: 0.8
+                    color: pColor,
+                    emissive: pColor,
+                    emissiveIntensity: 0.8,
+                    roughness: 0.3,
+                    metalness: 0.8
                 });
                 const planetMesh = new THREE.Mesh(planetGeo, pMat);
                 planetMesh.position.set(radius, 0, 0);
 
                 const pGlowGeo = new THREE.SphereGeometry(3, 32, 32);
                 const pGlowMat = new THREE.MeshBasicMaterial({
-                    color: pColor, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, side: THREE.BackSide
+                    color: pColor,
+                    transparent: true,
+                    opacity: 0.3,
+                    blending: THREE.AdditiveBlending,
+                    side: THREE.BackSide
                 });
                 const pGlowMesh = new THREE.Mesh(pGlowGeo, pGlowMat);
                 planetMesh.add(pGlowMesh);
@@ -513,7 +535,6 @@
                     pm10: fakePm25 + Math.floor(Math.random() * 20)
                 };
                 updatePlanet(fakeId, fakeData);
-
                 if (planets.size === 1) {
                     statusText.innerText += " (SIMULATION ACTIVE)";
                 }
@@ -560,7 +581,6 @@
             } else {
                 document.body.style.cursor = 'default';
                 tooltip.style.opacity = '0';
-
                 if (hoveredPlanet) {
                     hoveredPlanet.glow.scale.set(1, 1, 1);
                     hoveredPlanet.glow.material.opacity = 0.3;
@@ -601,7 +621,6 @@
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
-
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
@@ -626,7 +645,6 @@
             controls.update();
             renderer.render(scene, camera);
         }
-
         animate();
 
         window.addEventListener('resize', () => {

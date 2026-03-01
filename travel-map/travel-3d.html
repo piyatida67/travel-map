@@ -169,9 +169,22 @@
             z-index: 100;
         }
     </style>
+    <link rel="stylesheet" href="../global-nav.css" />
 </head>
 
 <body>
+    <nav class="cyber-global-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-link">🏠 HOME</a>
+            <a href="../cv-v2/index.html" class="nav-link">📄 CV</a>
+            <a href="../floodboy/index.html" class="nav-link">🌊 FLOODBOY</a>
+            <a href="dustboy-live.html" class="nav-link">🌌 DUSTBOY</a>
+            <a href="index.html" class="nav-link">📍 2D TRACK</a>
+            <a href="travel-3d.html" class="nav-link active">🚀 DEN-LINER</a>
+            <a href="dustboy-3d.html" class="nav-link">💎 3D CYBER</a>
+            <a href="../race/index.html" class="nav-link">🏁 ORACLE RACE</a>
+        </div>
+    </nav>
 
     <div id="loading" class="loading-screen">
         <h2 style="color: #d4af37; letter-spacing: 5px;">DEN-LINER</h2>
@@ -210,19 +223,18 @@
                 LIVE</a>
         </div>
         <div style="opacity: 0.5; font-size: 0.65rem; text-align: center;">
-            🖱️ Orbit: Left | 🔍 Zoom: Scroll | 🖐️ Pan: Right
+            鼠标 Orbit: Left | 🔍 Zoom: Scroll | 🖐️ Pan: Right
         </div>
     </div>
 
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
         }
+    }
     </script>
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
@@ -245,6 +257,7 @@
         scene.fog = new THREE.FogExp2(0x87CEEB, 0.0010); // Lighter fog for day
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 20000);
+
         const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -388,6 +401,7 @@
                 stripe.position.set(-i * 2.4, 0.5, 0);
                 group.add(stripe);
             }
+
             return group;
         }
 
@@ -403,7 +417,8 @@
             // Simple Sprite for Label
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = 512; canvas.height = 128;
+            canvas.width = 512;
+            canvas.height = 128;
             ctx.fillStyle = '#111';
             ctx.fillRect(0, 0, 512, 128); // Background for label visibility in day
             ctx.fillStyle = '#d4af37';
@@ -466,6 +481,7 @@
 
         function animate() {
             requestAnimationFrame(animate);
+
             if (spline && train && data.length > 0) {
                 progress += speed;
                 if (progress > 1) progress = 0;
@@ -504,6 +520,7 @@
                 if (progress > 0.99) announce("สถานีรถไฟพิษณุโลก");
                 if (progress < 0.01) announce("สถานีเชียงใหม่");
             }
+
             controls.update();
             renderer.render(scene, camera);
         }

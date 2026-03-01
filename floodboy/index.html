@@ -9,97 +9,102 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../global-nav.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
-    <div class="container">
-        <nav class="cyber-nav">
-            <a href="../index.html" class="nav-item">🏠 PORTFOLIO</a>
-            <a href="https://piyatida67.github.io/piyathida-cv/" class="nav-item" target="_blank">📄 MY CV</a>
-            <a href="../travel-map/dustboy-live.html" class="nav-item">🌌 DUSTBOY LIVE</a>
-        </nav>
-
-        <div id="loading-overlay" class="overlay">
-            <div class="loader"></div>
-            <p>Fetching sensor data from JIBCHAIN...</p>
+    <nav class="cyber-global-nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-link">🏠 HOME</a>
+            <a href="../cv-v2/index.html" class="nav-link">📄 CV</a>
+            <a href="index.html" class="nav-link active">🌊 FLOODBOY</a>
+            <a href="../travel-map/dustboy-live.html" class="nav-link">🌌 DUSTBOY</a>
+            <a href="../travel-map/index.html" class="nav-link">📍 2D TRACK</a>
+            <a href="../travel-map/travel-3d.html" class="nav-link">🚀 DEN-LINER</a>
+            <a href="../travel-map/dustboy-3d.html" class="nav-link">💎 3D CYBER</a>
         </div>
+    </nav>
 
-        <main class="card" id="main-card" style="display: none;">
-            <!-- Header Section -->
-            <header class="card-header">
-                <div class="header-main">
-                    <h1 id="store-nickname">Loading...</h1>
-                    <p id="store-description" class="subtitle"></p>
-                </div>
-                <div class="header-meta">
-                    <div class="status-badge">
-                        <span class="dot"></span>
-                        <span id="current-block">Block: ---</span>
-                    </div>
-                    <p id="last-updated-top" class="timestamp-small"></p>
-                    <a id="store-link" href="#" target="_blank" class="address-link">
-                        <span id="store-address-text">0x...</span>
-                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2"
-                            fill="none">
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
-                        </svg>
-                    </a>
-                </div>
-            </header>
+    <div class="container">
+        <div class="loader"></div>
+        <p>Fetching sensor data from JIBCHAIN...</p>
+    </div>
 
-            <!-- Chart Section -->
-            <section class="chart-section">
-                <div class="chart-controls">
-                    <button id="toggle-depth" class="btn-toggle active" data-type="waterDepth">Water Depth</button>
-                    <button id="toggle-voltage" class="btn-toggle" data-type="batteryVoltage">Battery Voltage</button>
+    <main class="card" id="main-card" style="display: none;">
+        <!-- Header Section -->
+        <header class="card-header">
+            <div class="header-main">
+                <h1 id="store-nickname">Loading...</h1>
+                <p id="store-description" class="subtitle"></p>
+            </div>
+            <div class="header-meta">
+                <div class="status-badge">
+                    <span class="dot"></span>
+                    <span id="current-block">Block: ---</span>
                 </div>
-                <div class="chart-container">
-                    <canvas id="sensorChart"></canvas>
-                    <div id="no-data-message" class="empty-state" style="display: none;">No historical data available
-                    </div>
-                </div>
-            </section>
+                <p id="last-updated-top" class="timestamp-small"></p>
+                <a id="store-link" href="#" target="_blank" class="address-link">
+                    <span id="store-address-text">0x...</span>
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+                    </svg>
+                </a>
+            </div>
+        </header>
 
-            <!-- Data Table Section -->
-            <section class="table-section">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Metric</th>
-                            <th>Current</th>
-                            <th>Min</th>
-                            <th>Max</th>
-                        </tr>
-                    </thead>
-                    <tbody id="data-body">
-                        <!-- Rows populated by JS -->
-                    </tbody>
-                </table>
-            </section>
-
-            <!-- Footer Section -->
-            <footer class="card-footer">
-                <div class="footer-grid">
-                    <div class="footer-item">
-                        <span class="label">Last Updated</span>
-                        <span id="footer-last-updated">---</span>
-                    </div>
-                    <div class="footer-item">
-                        <span class="label">Store Owner</span>
-                        <a id="owner-link" href="#" target="_blank" class="link-text">0x...</a>
-                    </div>
-                    <div class="footer-item">
-                        <span class="label">Deployed Block</span>
-                        <a id="deployed-block-link" href="#" target="_blank" class="link-text">#---</a>
-                    </div>
-                    <div class="footer-item">
-                        <span class="label">Sensor Status</span>
-                        <span id="sensor-count">1 authorized sensor</span>
-                    </div>
+        <!-- Chart Section -->
+        <section class="chart-section">
+            <div class="chart-controls">
+                <button id="toggle-depth" class="btn-toggle active" data-type="waterDepth">Water Depth</button>
+                <button id="toggle-voltage" class="btn-toggle" data-type="batteryVoltage">Battery Voltage</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="sensorChart"></canvas>
+                <div id="no-data-message" class="empty-state" style="display: none;">No historical data available
                 </div>
-            </footer>
-        </main>
+            </div>
+        </section>
+
+        <!-- Data Table Section -->
+        <section class="table-section">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Current</th>
+                        <th>Min</th>
+                        <th>Max</th>
+                    </tr>
+                </thead>
+                <tbody id="data-body">
+                    <!-- Rows populated by JS -->
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Footer Section -->
+        <footer class="card-footer">
+            <div class="footer-grid">
+                <div class="footer-item">
+                    <span class="label">Last Updated</span>
+                    <span id="footer-last-updated">---</span>
+                </div>
+                <div class="footer-item">
+                    <span class="label">Store Owner</span>
+                    <a id="owner-link" href="#" target="_blank" class="link-text">0x...</a>
+                </div>
+                <div class="footer-item">
+                    <span class="label">Deployed Block</span>
+                    <a id="deployed-block-link" href="#" target="_blank" class="link-text">#---</a>
+                </div>
+                <div class="footer-item">
+                    <span class="label">Sensor Status</span>
+                    <span id="sensor-count">1 authorized sensor</span>
+                </div>
+            </div>
+        </footer>
+    </main>
     </div>
 
     <!-- Viem module fallback/import -->

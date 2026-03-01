@@ -1,0 +1,442 @@
+:root {
+    --primary: #d4af37;
+    --primary-glow: rgba(212, 175, 55, 0.4);
+    --secondary: #00ffcc;
+    --secondary-glow: rgba(0, 255, 204, 0.4);
+    --bg: #050510;
+    --panel-bg: rgba(15, 15, 35, 0.85);
+    --border: rgba(255, 255, 255, 0.1);
+    --glass: rgba(255, 255, 255, 0.03);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg);
+    color: #fff;
+    font-family: 'Inter', 'Kanit', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    padding-top: 60px;
+}
+
+.gold-text {
+    color: var(--primary);
+    text-shadow: 0 0 10px var(--primary-glow);
+}
+
+.cyan-text {
+    color: var(--secondary);
+    text-shadow: 0 0 10px var(--secondary-glow);
+}
+
+/* --- Layout --- */
+.game-container {
+    display: flex;
+    height: calc(100vh - 60px);
+    width: 100%;
+}
+
+.sidebar {
+    width: 300px;
+    background: rgba(0, 0, 0, 0.4);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 20px;
+}
+
+.race-workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 40px;
+    background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.03) 0%, transparent 70%);
+}
+
+.panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+/* --- Hall of Fame --- */
+.hall-of-fame h3 {
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+}
+
+.hof-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.85rem;
+}
+
+.hof-name {
+    font-weight: bold;
+    color: #ddd;
+}
+
+.hof-time {
+    color: var(--secondary);
+    font-family: monospace;
+}
+
+/* --- Status Dot --- */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff3e3e;
+}
+
+.dot.online {
+    background: var(--secondary);
+    box-shadow: 0 0 15px var(--secondary);
+}
+
+.node-id {
+    font-size: 0.7rem;
+    opacity: 0.5;
+}
+
+/* --- Track Area --- */
+.race-header {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.race-header h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: 8px;
+    margin-bottom: 5px;
+}
+
+.race-header p {
+    font-size: 0.8rem;
+    opacity: 0.5;
+    letter-spacing: 4px;
+}
+
+.track-area {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    position: relative;
+    padding: 20px 0;
+    overflow-y: auto;
+}
+
+.track {
+    position: relative;
+    height: 100%;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px 60px;
+}
+
+.finish-line {
+    position: absolute;
+    right: 60px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    background: repeating-linear-gradient(0deg,
+            #fff,
+            #fff 10px,
+            #000 10px,
+            #000 20px);
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+/* --- Player Element --- */
+.char-option {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    padding: 2px;
+    overflow: hidden;
+}
+
+.player-lane {
+    height: 60px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.player-sprite {
+    position: absolute;
+    left: 0;
+    width: 60px;
+    height: 60px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: left 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 5;
+    filter: drop-shadow(0 0 10px var(--primary-glow));
+}
+
+.player-sprite img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    mix-blend-mode: screen;
+    transform: scaleX(-1);
+    /* Base: Face RIGHT */
+    transition: transform 0.1s;
+}
+
+.player-sprite.step img {
+    transform: scaleX(1);
+    /* Step: Face LEFT (alternating legs) */
+}
+
+/* Character Variants via Filters */
+.char-og {
+    filter: brightness(1.2);
+}
+
+.char-tiga {
+    filter: hue-rotate(220deg) brightness(1.4);
+}
+
+.char-gaia {
+    filter: hue-rotate(40deg) saturate(2) brightness(1.5);
+}
+
+.char-belial {
+    filter: grayscale(1) brightness(0.7) contrast(1.5);
+}
+
+/* Realistic Running Animation - Only when MOVING */
+.player-sprite.moving img {
+    animation: run-bob 0.4s infinite cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+@keyframes run-bob {
+    0% {
+        transform: scaleX(-1) translateY(0) rotate(-2deg);
+    }
+
+    50% {
+        transform: scaleX(-1) translateY(-8px) rotate(4deg);
+    }
+
+    100% {
+        transform: scaleX(-1) translateY(0) rotate(-2deg);
+    }
+}
+
+.player-sprite.moving.step img {
+    animation: run-bob-step 0.4s infinite cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+@keyframes run-bob-step {
+    0% {
+        transform: scaleX(1) translateY(0) rotate(-2deg);
+    }
+
+    50% {
+        transform: scaleX(1) translateY(-8px) rotate(4deg);
+    }
+
+    100% {
+        transform: scaleX(1) translateY(0) rotate(-2deg);
+    }
+}
+
+.player-sprite::after {
+    content: '';
+    position: absolute;
+    left: -20px;
+    width: 20px;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, currentColor);
+    opacity: 0.5;
+}
+
+.player-name-tag {
+    position: absolute;
+    top: -20px;
+    left: 0;
+    font-size: 0.6rem;
+    white-space: nowrap;
+    opacity: 0.8;
+    color: var(--secondary);
+    letter-spacing: 1px;
+}
+
+/* --- Controls --- */
+.controls-hint {
+    margin-top: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    opacity: 0.4;
+}
+
+.key {
+    border: 2px solid #fff;
+    padding: 5px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* --- Overlays --- */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(5, 5, 16, 0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(10px);
+}
+
+.overlay.active {
+    display: flex;
+}
+
+.modal {
+    text-align: center;
+    padding: 40px;
+    background: var(--panel-bg);
+    border: 1px solid var(--primary);
+    border-radius: 30px;
+    width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal h2 {
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+}
+
+.modal p {
+    opacity: 0.6;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    margin-bottom: 30px;
+}
+
+input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    padding: 15px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 25px;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+}
+
+input:focus {
+    border-color: var(--primary);
+}
+
+.cyber-btn {
+    background: var(--primary);
+    color: #000;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 12px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: 0.3s;
+}
+
+.cyber-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px var(--primary-glow);
+}
+
+.cyber-btn-small {
+    background: transparent;
+    color: #ff3e3e;
+    border: 1px solid #ff3e3e;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: 0.2s;
+}
+
+.cyber-btn-small:hover {
+    background: rgba(255, 62, 62, 0.2);
+    box-shadow: 0 0 15px rgba(255, 62, 62, 0.4);
+}
+
+.large-text {
+    font-size: 5rem;
+    font-weight: 900;
+    color: var(--primary);
+}
+
+.winner-modal {
+    border-color: var(--secondary);
+}
+
+.winner-modal .trophy {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.winner-modal .time-text {
+    font-size: 2rem;
+    color: var(--secondary);
+    margin: 20px 0;
+    font-family: monospace;
+}

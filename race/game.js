@@ -8,10 +8,10 @@ const roomID = urlParams.get('room') || 'public';
 
 const CONFIG = {
     BROKER: 'wss://dustboy-wss-bridge.laris.workers.dev/mqtt',
-    TOPIC_ROOT: `oracle/race/rooms/${roomID}/`, // Dynamic topic based on URL
+    TOPIC_ROOT: `oracle/race/rooms/${roomID}/v6/`, // Dynamic topic based on URL, v6 for fresh start
     FINISH_LINE: 500, // Distance increased (taps required)
     STEP: 5,        // Pixels or units per tap
-    RETAIN: true
+    RETAIN: false   // Do NOT retain player positions to fix the ghost issue natively
 };
 
 // Set Room Display
@@ -62,7 +62,7 @@ const client = mqtt.connect(CONFIG.BROKER, {
     will: {
         topic: CONFIG.TOPIC_ROOT + 'p/' + state.player.id,
         payload: '',
-        retain: true
+        retain: false // We do not retain LWT either
     }
 });
 
@@ -106,6 +106,7 @@ client.on('message', (topic, message) => {
             if (msgStr.length === 0) {
                 state.others.delete(pid);
             } else if (payload) {
+                payload.localLastSeen = Date.now(); // Mark when we last saw them
                 state.others.set(pid, payload);
             }
             renderRace();
@@ -115,7 +116,7 @@ client.on('message', (topic, message) => {
 
 // Explicitly clear this player from the grid if the tab is closed/refreshed
 window.addEventListener('beforeunload', () => {
-    client.publish(CONFIG.TOPIC_ROOT + 'p/' + state.player.id, '', { retain: true });
+    client.publish(CONFIG.TOPIC_ROOT + 'p/' + state.player.id, '', { retain: false });
 });
 
 // --- Game Logic ---
@@ -181,7 +182,7 @@ function joinGame() {
 }
 
 function syncPlayer() {
-    client.publish(CONFIG.TOPIC_ROOT + 'p/' + state.player.id, JSON.stringify(state.player), { retain: true });
+    client.publish(CONFIG.TOPIC_ROOT + 'p/' + state.player.id, JSON.stringify(state.player), { retain: false });
 }
 
 function move() {
@@ -386,13 +387,30 @@ function getRandomColor() {
     return colors[Math.floor(Math.random() * colors.length)];
 }
 
-// Global animation loop to periodically clear 'moving' class if tapping stops
+// Global animation loop to periodically clear 'moving' class if tapping stops, and broadcast presence
 setInterval(() => {
     if (state.game.state === 'RACING' && !state.player.finished) {
         // Re-render to check tap timeouts
         renderRace();
     }
-}, 100);
+
+    // Broadcast our presence continuously every 1 second so new players see us
+    if (state.player.name) {
+        syncPlayer();
+    }
+
+    // Clear offline ghosts
+    const now = Date.now();
+    let ghostsCleared = false;
+    for (const [pid, p] of state.others.entries()) {
+        if (now - (p.localLastSeen || 0) > 4000) {
+            state.others.delete(pid); // Haven't heard from them in 4s (sync interval is 1s)
+            ghostsCleared = true;
+        }
+    }
+    if (ghostsCleared) renderRace();
+
+}, 1000);
 
 // Initial render
 renderRace();

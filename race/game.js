@@ -3,13 +3,20 @@
  * Powered by MQTT Retain Protocol
  */
 
+const urlParams = new URLSearchParams(window.location.search);
+const roomID = urlParams.get('room') || 'public';
+
 const CONFIG = {
     BROKER: 'wss://dustboy-wss-bridge.laris.workers.dev/mqtt',
-    TOPIC_ROOT: 'oracle/race/v5/', // Changed to v5 to forcibly clear all ghosts from previous tests
+    TOPIC_ROOT: `oracle/race/rooms/${roomID}/`, // Dynamic topic based on URL
     FINISH_LINE: 500, // Distance increased (taps required)
     STEP: 5,        // Pixels or units per tap
     RETAIN: true
 };
+
+// Set Room Display
+const roomDisplay = document.getElementById('room-id-display');
+if (roomDisplay) roomDisplay.innerText = roomID.toUpperCase();
 
 const state = {
     player: {
@@ -314,6 +321,25 @@ const btnWinnerReset = document.getElementById('btn-winner-reset');
 if (btnWinnerReset) {
     btnWinnerReset.onclick = () => {
         client.publish(CONFIG.TOPIC_ROOT + 'status', JSON.stringify({ state: 'LOBBY', startTime: 0 }), { retain: true });
+    };
+}
+
+// Room Management
+const btnInvite = document.getElementById('btn-invite');
+if (btnInvite) {
+    btnInvite.onclick = () => {
+        navigator.clipboard.writeText(window.location.href);
+        const old = btnInvite.innerText;
+        btnInvite.innerText = 'COPIED!';
+        setTimeout(() => btnInvite.innerText = old, 2000);
+    };
+}
+
+const btnCreateRoom = document.getElementById('btn-create-room');
+if (btnCreateRoom) {
+    btnCreateRoom.onclick = () => {
+        const newRoom = Math.random().toString(36).substring(2, 8).toUpperCase();
+        window.location.href = window.location.pathname + '?room=' + newRoom;
     };
 }
 

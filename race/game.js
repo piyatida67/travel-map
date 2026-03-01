@@ -126,7 +126,9 @@ function handleGameStatus(gameStatus) {
         if (state.game.startTime) state.game.startTime = Date.now(); // local estimate
     } else if (state.game.state === 'FINISHED') {
         el.overlayStatus.classList.remove('active');
-        showWinner(state.game.winner.name, state.game.winner.time);
+        if (state.game.winner) {
+            showWinner(state.game.winner.name, state.game.winner.time);
+        }
     }
 }
 
@@ -286,6 +288,14 @@ if (el.btnReset) {
     };
 }
 
+// Reset from Winner Modal Button
+const btnWinnerReset = document.getElementById('btn-winner-reset');
+if (btnWinnerReset) {
+    btnWinnerReset.onclick = () => {
+        client.publish(CONFIG.TOPIC_ROOT + 'status', JSON.stringify({ state: 'LOBBY', startTime: 0 }), { retain: true });
+    };
+}
+
 // Character Selection Interaction
 document.querySelectorAll('.char-option').forEach(opt => {
     opt.onclick = () => {
@@ -299,6 +309,9 @@ document.querySelectorAll('.char-option').forEach(opt => {
 });
 
 window.onkeydown = (e) => {
+    // Prevent Space bar from triggering game while typing in nickname input
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
     if (e.code === 'Space') {
         e.preventDefault();
         if (e.repeat) return; // DISABLE HOLDING

@@ -343,6 +343,19 @@ if (btnCreateRoom) {
     };
 }
 
+const btnJoinManualRoom = document.getElementById('btn-join-room');
+const manualRoomInput = document.getElementById('manual-room-input');
+if (btnJoinManualRoom && manualRoomInput) {
+    btnJoinManualRoom.onclick = () => {
+        const roomCode = manualRoomInput.value.trim().toUpperCase();
+        if (roomCode) {
+            window.location.href = window.location.pathname + '?room=' + roomCode;
+        } else {
+            alert('Please enter a valid room code.');
+        }
+    };
+}
+
 // Character Selection Interaction
 document.querySelectorAll('.char-option').forEach(opt => {
     opt.onclick = () => {

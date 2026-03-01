@@ -50,13 +50,26 @@
             <div class="panel room-card">
                 <h3
                     style="font-size:0.8rem; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">
-                    <span class="gold-text">🔑</span> ROOM</h3>
+                    <span class="gold-text">🔑</span> ROOM
+                </h3>
                 <div style="display:flex; gap:10px; flex-direction:column;">
                     <div id="room-id-display" class="cyan-text"
                         style="font-family:monospace; font-size:1.2rem; text-align:center;">PUBLIC</div>
                     <button id="btn-invite" class="cyber-btn-small">COPY LINK</button>
                     <button id="btn-create-room" class="cyber-btn-small"
                         style="border-color:var(--primary); color:var(--primary);">CREATE PRIVATE</button>
+
+                    <div style="margin-top: 5px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 10px;">
+                        <p
+                            style="font-size: 0.65rem; opacity: 0.7; margin-bottom: 5px; text-align: center; letter-spacing: 1px;">
+                            OR ENTER ROOM CODE:</p>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="manual-room-input" placeholder="CODE" maxlength="8"
+                                style="margin-bottom: 0; padding: 6px; font-size: 0.8rem; text-transform: uppercase; width: 60%;">
+                            <button id="btn-join-room" class="cyber-btn-small"
+                                style="padding: 6px; width: 40%; font-size: 0.7rem;">JOIN</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
